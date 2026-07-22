@@ -87,8 +87,12 @@ const logger = {
   },
 
   // ── AI interaction ────────────────────────────────────────────────────────
-  thinking(msg) {
-    getTUI().renderThinking(msg);
+  thinking(elapsedMs, charsReceived) {
+    getTUI().renderThinking(elapsedMs, charsReceived);
+  },
+
+  clearThinking() {
+    getTUI().clearThinking();
   },
 
   waiting(elapsedMs, charsReceived, model) {

@@ -292,32 +292,35 @@ class TUI {
   // ─────────────────────────────────────────────
 
   /**
-   * Show thinking/reasoning display.
+   * Show thinking/receiving indicator — overwrites in place, never spams.
    *
-   * Example:
-   *   💭  Thinking... (23s)
-   * or in debug:
-   *   💭  The user wants to build an auth system. First I should...
+   * Before any characters arrive:
+   *   💭  Thinking...  12.4s
+   * Once characters start streaming in:
+   *   ⟳  Receiving response...  18.9s  (3.2 KB)
    */
-  renderThinking(text, elapsedMs) {
-    const width = getWidth();
-    if (!text || !text.trim()) {
-      // Just show the indicator
-      const timeStr = elapsedMs ? color('gray', ` (${formatMs(elapsedMs)})`) : '';
-      this._print(colors(['dim', 'magenta'], `  💭  Thinking...`) + timeStr);
-      return;
-    }
+  renderThinking(elapsedMs, charsReceived) {
+    if (!process.stdout.isTTY) return; // can't overwrite in non-TTY
 
-    if (this.debug) {
-      // Show first 2 lines of thinking content
-      const lines = text.split('\n').filter(l => l.trim()).slice(0, 2);
-      lines.forEach(line => {
-        this._print(colors(['dim', 'magenta'], `  💭  ${truncate(line, width - 8)}`));
-      });
-    } else {
-      const timeStr = elapsedMs ? color('gray', ` (${formatMs(elapsedMs)})`) : '';
-      this._print(colors(['dim', 'magenta'], `  💭  Thinking...`) + timeStr);
-    }
+    const elapsed = formatMs(elapsedMs || 0);
+    const hasChars = charsReceived > 0;
+
+    const icon = hasChars
+      ? colors(['dim', 'cyan'],    '  ⟳  Receiving response...')
+      : colors(['dim', 'magenta'], '  💭  Thinking...');
+
+    const chars = hasChars
+      ? color('gray', ` (${(charsReceived / 1024).toFixed(1)} KB)`)
+      : '';
+
+    const timeStr = color('gray', ` ${elapsed}`);
+
+    // Overwrite current line — identical mechanism to renderWaiting()
+    process.stdout.write(`\r${icon}${timeStr}${chars}          `);
+  }
+
+  clearThinking() {
+    this.clearWaiting();
   }
 
   // ─────────────────────────────────────────────
