@@ -68,7 +68,8 @@ const BUILT_IN_COMMANDS = [
       ];
 
       for (const [category, cmds] of Object.entries(grouped)) {
-        lines.push(`\n${category}:`);
+        lines.push('');
+        lines.push(`${category}:`);
         cmds.forEach(cmd => {
           const aliases = cmd.aliases.length
             ? ` (also: ${cmd.aliases.map(a => '/'+a).join(', ')})`
@@ -77,7 +78,8 @@ const BUILT_IN_COMMANDS = [
         });
       }
 
-      lines.push('\n─'.repeat(50));
+      lines.push('');
+      lines.push('─'.repeat(50));
       lines.push('Type /help <command> for detailed help on any command.');
       return lines.join('\n');
     },

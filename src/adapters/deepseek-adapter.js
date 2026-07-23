@@ -98,9 +98,15 @@ class DeepSeekAdapter extends BaseAdapter {
         }, el, text);
       }
 
-      await this.page.waitForTimeout(this.config.SEND_DELAY || 1_500);
+      const sendDelayMs = this.config.SEND_DELAY || 1_500;
+      const startPoll = Date.now();
+      let clicked = false;
+      while (Date.now() - startPoll < sendDelayMs) {
+        clicked = await this._clickSendButton();
+        if (clicked) break;
+        await this.page.waitForTimeout(50);
+      }
 
-      const clicked = await this._clickSendButton();
       if (!clicked) {
         await this.page.keyboard.press('Enter');
       }
@@ -126,7 +132,7 @@ class DeepSeekAdapter extends BaseAdapter {
       const initialCount = await this._getMessageCount();
       let appeared = false;
 
-      while (Date.now() - start < (this.config.APPEAR_TIMEOUT || 45_000)) {
+      while (Date.now() - start < (this.config.APPEAR_TIMEOUT || 120_000)) {
         const count = await this._getMessageCount();
         if (count > initialCount) { appeared = true; break; }
         await this.page.waitForTimeout(this.config.GENERATION_POLL || 800);
@@ -224,9 +230,12 @@ class DeepSeekAdapter extends BaseAdapter {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  _getInputSelectors() {
-    return this.selectors.chatInput;
-  }
+  _getInputSelectors() { return this.selectors.chatInput; }
+  _getSendSelectors() { return this.selectors.sendButton; }
+  _getStopSelectors() { return this.selectors.stopButton; }
+  _getNewChatSelectors() { return this.selectors.newChat; }
+  _getResponseSelectors() { return this.selectors.messageContainer; }
+  getModelUrl() { return this.config.DEEPSEEK_URL || 'https://chat.deepseek.com'; }
 
   async _findInput() {
     for (const sel of this.selectors.chatInput) {

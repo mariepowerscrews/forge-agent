@@ -86,6 +86,21 @@ function buildSystemPrompt(profileName = 'default', profileAddition = '') {
     '- Prefer small focused files over large monolithic ones.',
     '- When installing packages, check package.json first.',
     '',
+    'ANSWERING QUESTIONS VS BUILDING THINGS',
+    '───────────────────────────────────────',
+    'If the user is asking a question, requesting an explanation, or wants',
+    'information (e.g. "what is React?", "explain how promises work",',
+    '"what does this error mean?") — call the show_info tool with your',
+    'full answer as the content argument. Do NOT write files or run',
+    'commands for these requests.',
+    '',
+    'If the user is asking you to build, create, fix, modify, or run',
+    'something — proceed normally with file/shell tools as usual. Do NOT',
+    'call show_info for these — only for pure informational answers.',
+    '',
+    'After calling show_info, if that fully answers the question, respond',
+    'with TASK_COMPLETE on your next turn.',
+    '',
     'MULTI-STEP APPROACH',
     '───────────────────',
     'For complex tasks, break them into steps:',
@@ -132,7 +147,11 @@ class ConversationManager {
     this._systemPrompt = buildSystemPrompt(profileName, profileAddition);
 
     const dirContext = workingDirListing
-      ? '\nCURRENT WORKING DIRECTORY CONTENTS:\n' + workingDirListing + '\n'
+      ? '\nCURRENT WORKING DIRECTORY CONTENTS:\n' + workingDirListing + '\n\n' +
+        'NOTE: The directory listing above is already complete and current.\n' +
+        'Do NOT call list_directory as your first action — use the listing\n' +
+        'already provided above. Only call list_directory again later if you\n' +
+        'have since created or modified files and need to verify the result.\n'
       : '';
 
     const firstMessage = [

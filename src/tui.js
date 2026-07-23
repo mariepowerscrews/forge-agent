@@ -63,7 +63,8 @@ function getWidth() {
 }
 
 function padEnd(str, len) {
-  const visible = stripAnsi(str);
+  // Account for double-width emojis used in this TUI
+  const visible = stripAnsi(str).replace(/✅|❌|⚠ |⏱ |🔨/g, '  ');
   const pad     = Math.max(0, len - visible.length);
   return str + ' '.repeat(pad);
 }
@@ -489,6 +490,14 @@ class TUI {
   warn(msg)    { this._print(`${color('lyellow', '  ⚠')}  ${color('lyellow', msg)}`); }
   error(msg)   { this._print(`${color('lred', '  ✗')}  ${color('lred', msg)}`); }
   dim(msg)     { this._print(color('gray', `  ${msg}`)); }
+
+  renderAnswer(text) {
+    this._print('\n' + color('cyan', '  💡 Answer:\n'));
+    const { renderMarkdown } = require('./markdown-render');
+    const lines = renderMarkdown(String(text));
+    lines.forEach(line => this._print('  ' + line));
+    this._print('');
+  }
 
   banner() {
     const width = getWidth();

@@ -11,9 +11,10 @@ const { TOOLS, getLoadedPluginCount } = require('./tools');
  * Generate a comprehensive diagnostics report object.
  */
 function generateDiagnostics() {
+  const pkg = require('../package.json');
   const report = {
     timestamp: new Date().toISOString(),
-    version: '2.0.0',
+    version: pkg.version,
     node: process.version,
     platform: process.platform,
     arch: process.arch,

@@ -87,6 +87,7 @@ class InputHandler {
       output   : process.stdout,
       terminal : isTTY,
       completer: isTTY ? this._makeCompleter() : undefined,
+      prompt   : this.prompt,
     });
 
     this._rl = rl;
@@ -152,7 +153,7 @@ class InputHandler {
     });
 
     // Show the prompt
-    process.stdout.write(this.prompt);
+    rl.prompt();
 
     // Process each line
     rl.on('line', (line) => {

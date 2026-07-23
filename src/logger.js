@@ -65,6 +65,7 @@ const logger = {
   warn(msg)       { getTUI().warn(msg); },
   error(msg)      { getTUI().error(msg); },
   dim(msg)        { getTUI().dim(msg); },
+  answer(text)    { getTUI().renderAnswer(text); },
   separator(label){ getTUI().separator(label); },
 
   // ── Task lifecycle ────────────────────────────────────────────────────────

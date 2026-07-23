@@ -49,6 +49,35 @@ beforeEach(() => {
 });
 
 // ─────────────────────────────────────────────────────────
+//  show_info
+// ─────────────────────────────────────────────────────────
+
+describe('show_info', () => {
+  test('exists in TOOLS', () => {
+    expect(TOOLS.show_info).toBeDefined();
+  });
+
+  test('throws for missing content', async () => {
+    await expect(executeTool('show_info', { title: 'T' }))
+      .rejects.toThrow('requires non-empty content');
+  });
+
+  test('throws for empty-string content', async () => {
+    await expect(executeTool('show_info', { content: '   ' }))
+      .rejects.toThrow('requires non-empty content');
+  });
+
+  test('returns { displayed: true, content, title } for valid input', async () => {
+    const res = await executeTool('show_info', { content: 'Hello' });
+    expect(res).toEqual({ displayed: true, title: null, content: 'Hello' });
+  });
+
+  test('returns the provided title when given', async () => {
+    const res = await executeTool('show_info', { content: 'Hello', title: 'React' });
+    expect(res).toEqual({ displayed: true, title: 'React', content: 'Hello' });
+  });
+});
+// ─────────────────────────────────────────────────────────
 //  Tool registry
 // ─────────────────────────────────────────────────────────
 

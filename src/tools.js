@@ -126,6 +126,34 @@ function assertIsGitRepo(cwd) {
 
 const TOOLS = {
 
+  // ── Display / Information ───────────────────────────────────────────────────
+  show_info: {
+    description: 'Display an informational answer to the user in the terminal, ' +
+      'nicely formatted with markdown styling. Use this instead of writing plain ' +
+      'prose directly when the user asked a question, wants an explanation, or ' +
+      'wants information — NOT when they asked you to build, write, or modify files.',
+    parameters: {
+      content: {
+        type: 'string',
+        required: true,
+        description: 'The full answer/explanation text. Markdown formatting ' +
+          '(headers, **bold**, `code`, bullet lists, numbered lists, fenced ' +
+          'code blocks) is supported and will be rendered with styling.',
+      },
+      title: {
+        type: 'string',
+        required: false,
+        description: 'Optional short title shown above the answer (e.g. "React Overview").',
+      },
+    },
+    async execute({ content, title }) {
+      if (!content || typeof content !== 'string' || !content.trim()) {
+        throw new Error('show_info requires non-empty content');
+      }
+      return { displayed: true, title: title || null, content };
+    },
+  },
+
   // ── File Reading ────────────────────────────────────────────────────────────
   read_file: {
     description: 'Read the full contents of a file. Optionally read specific line ranges.',

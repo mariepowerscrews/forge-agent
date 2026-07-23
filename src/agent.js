@@ -10,6 +10,8 @@ const DeepSeekBrowser              = require('./browser');
 const { executeTool, cache }       = require('./tools');
 const { parseResponse,
         formatToolResult }         = require('./parser');
+const { PermissionStore, isReadOnly, getCategory, CATEGORY_LABELS } = require('./permission-store');
+const { showPermissionMenu } = require('./permission-menu');
 const { ConversationManager }      = require('./prompt');
 const { Errors, displayError }     = require('./errors');
 const { sleep }                    = require('./retry');
@@ -42,6 +44,7 @@ class DeepSeekAgent {
     this.templates    = new TemplateStore();
     this.options      = options;
     this._running     = false;
+    this.permissionStore = new PermissionStore(config.WORKING_DIR || process.cwd());
 
     const { getProjectContext } = require('./project-context');
     this.projectContext = getProjectContext(config.WORKING_DIR || process.cwd());
@@ -356,6 +359,42 @@ class DeepSeekAgent {
             }
           }
 
+          if (!isReadOnly(parsed.name)) {
+            const category = getCategory(parsed.name);
+            if (!this.permissionStore.isPreApproved(category)) {
+              const detail = parsed.args?.path
+                ? `${parsed.name} → ${parsed.args.path}`
+                : parsed.args?.command
+                  ? `${parsed.name} → ${String(parsed.args.command).slice(0, 80)}`
+                  : parsed.name;
+
+              const decision = await showPermissionMenu({
+                label: CATEGORY_LABELS[category] || category,
+                detail,
+              });
+
+              if (decision === 'stop') {
+                logger.info('Task stopped by user (permission denied).');
+                this._running = false;
+                return '';
+              }
+
+              if (decision === 'deny') {
+                logger.warn(`Permission denied for ${parsed.name} — informing AI`);
+                const denialMsg = this.conversation.addToolResult(
+                  parsed.name,
+                  `Permission denied by user. Do not retry the exact same action — try a different approach or continue with other parts of the task.`,
+                  true
+                );
+                await this.browser.sendMessage(denialMsg);
+                step++;
+                continue;
+              }
+
+              this.permissionStore.record(category, decision === 'once' ? null : decision);
+            }
+          }
+
           logger.toolCall(parsed.name, parsed.args);
           progress.recordToolCall(parsed.name, parsed.args);
 
@@ -369,6 +408,23 @@ class DeepSeekAgent {
             result  = err.message || String(err);
             isError = true;
             logger.toolResult(result, true, parsed.name);
+          }
+
+          if (parsed.name === 'show_info' && !isError) {
+            try {
+              const answerContent = (result && typeof result === 'object' && result.content)
+                ? result.content
+                : String(result);
+              const answerTitle = (result && typeof result === 'object' && result.title) || null;
+
+              if (answerTitle) {
+                logger.getTUI().separator(answerTitle);
+              }
+              logger.getTUI().renderAnswer(answerContent);
+            } catch (renderErr) {
+              // Never let display formatting crash the agent — fall back to plain print
+              console.log('\n' + String(result) + '\n');
+            }
           }
 
           progress.recordToolResult(parsed.name, result, isError);
@@ -434,20 +490,34 @@ class DeepSeekAgent {
             continue;
           }
 
-          if (logger.getTUI && typeof logger.getTUI === 'function' && logger.getTUI().noColor === false) {
-            console.log('\n' + content);
-            logger.finalOutput(progress, 'completed');
+          function _looksLikeInformationalAnswer(content, hadAnyToolCalls) {
+            if (hadAnyToolCalls) return false; // real work happened — treat as task result
+            if (!content) return false;
+            // Heuristic: short-to-medium prose, no code fences implying file creation intent,
+            // or explicitly answers a question-style task
+            const looksExplanatory = /^(react is|a |an |the |this |it is|yes|no|here is an explanation|in short|to summarize)/i.test(content.trim());
+            const isShortish = content.length < 4000;
+            return isShortish && (looksExplanatory || !/\.(js|py|html|css|json)\b/i.test(content.slice(0, 200)));
+          }
+
+          if (_looksLikeInformationalAnswer(content, progress.toolCallCount > 0)) {
+            logger.answer(content);
           } else {
-            const formatted = format(content, config.OUTPUT_FORMAT, {
-              task,
-              model: config.MODEL,
-              profile: config.ACTIVE_PROFILE,
-              timestamp: config.OUTPUT_TIMESTAMP
-            });
-            if (config.OUTPUT_FILE) {
-              this._saveToFile(config.OUTPUT_FILE, formatted);
+            if (logger.getTUI && typeof logger.getTUI === 'function' && logger.getTUI().noColor === false) {
+              console.log('\n' + content);
+              logger.finalOutput(progress, 'completed');
             } else {
-              logger.finalOutput(formatted);
+              const formatted = format(content, config.OUTPUT_FORMAT, {
+                task,
+                model: config.MODEL,
+                profile: config.ACTIVE_PROFILE,
+                timestamp: config.OUTPUT_TIMESTAMP
+              });
+              if (config.OUTPUT_FILE) {
+                this._saveToFile(config.OUTPUT_FILE, formatted);
+              } else {
+                logger.finalOutput(formatted);
+              }
             }
           }
 

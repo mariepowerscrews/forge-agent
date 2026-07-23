@@ -7,9 +7,9 @@ const path = require('path');
 describe('v2.0.0 Release Verification', () => {
   const root = path.join(__dirname, '..');
 
-  test('package.json version is "2.0.0"', () => {
+  test('package.json version is "2.0.1"', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-    expect(pkg.version).toBe('2.0.0');
+    expect(pkg.version).toBe('2.0.1');
   });
 
   test('package.json name is "@omar-azam/forge-agent"', () => {
@@ -72,7 +72,7 @@ describe('v2.0.0 Release Verification', () => {
 
   test('src/diagnostics.js version is updated', () => {
     const content = fs.readFileSync(path.join(root, 'src', 'diagnostics.js'), 'utf8');
-    expect(content).toContain("version: '2.0.0'");
+    expect(content).toContain("version: pkg.version");
   });
 
   test('docs/css/style.css contains release-banner styles', () => {
