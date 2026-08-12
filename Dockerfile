@@ -83,5 +83,6 @@ RUN mkdir -p /root/.deepseek-agent/session \
 # Set working directory for user projects
 WORKDIR /workspace
 
-ENTRYPOINT ["node", "/app/src/index.js"]
-CMD ["--help"]
+EXPOSE 10000
+
+CMD ["node", "/app/src/server.js"]
