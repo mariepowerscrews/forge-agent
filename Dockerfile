@@ -2,6 +2,7 @@
 FROM node:20-slim AS deps
 WORKDIR /app
 COPY package*.json ./
+COPY src/ ./src/
 RUN npm ci --omit=dev
 
 # STAGE 2 — playwright (download Chromium)
