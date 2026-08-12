@@ -3,6 +3,8 @@ FROM node:20-slim AS deps
 WORKDIR /app
 COPY package*.json ./
 COPY src/ ./src/
+# Prevent postinstall from attempting to download Playwright browsers during deps stage
+ENV SKIP_PLAYWRIGHT_INSTALL=1
 RUN npm ci --omit=dev
 
 # STAGE 2 — playwright (download Chromium)
