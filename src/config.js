@@ -1,3 +1,4 @@
+// src/config.js — global configuration for Forge Agent
 'use strict';
 
 const path = require('path');
@@ -12,6 +13,11 @@ const DEFAULTS = {
   // AI Model
   MODEL              : 'deepseek',
   DEEPSEEK_URL       : 'https://chat.deepseek.com',
+
+  // DeepSeek automated login (optional)
+  // Provide credentials via environment variables or config file.
+  DEEPSEEK_EMAIL     : process.env.DEEPSEEK_EMAIL || '',
+  DEEPSEEK_PASSWORD  : process.env.DEEPSEEK_PASSWORD || '',
 
   // Timing (tuned for slow connections)
   RESPONSE_TIMEOUT   : 600_000,   // 10 min total wait
@@ -143,6 +149,9 @@ function validateConfigValue(key, value) {
     PLANNING_MODE     : v => typeof v === 'boolean',
     SHOW_THINKING     : v => typeof v === 'boolean',
     STRICT_SANDBOX    : v => typeof v === 'boolean',
+    // DeepSeek login helpers
+    DEEPSEEK_EMAIL    : v => typeof v === 'string',
+    DEEPSEEK_PASSWORD : v => typeof v === 'string',
   };
 
   if (rules[key]) {
